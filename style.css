@@ -1,0 +1,123 @@
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+/* Fundo bonito */
+body {
+    background: linear-gradient(135deg, #1e1e2f, #2c2c54);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Container central */
+.container {
+    background: #2f2f4f;
+    padding: 30px;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 1000px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    text-align: center;
+}
+
+/* Título */
+h1 {
+    color: white;
+    margin-bottom: 20px;
+}
+
+/* Área da tabela com scroll */
+.table-container {
+    overflow-x: auto;
+}
+
+/* Tabela */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #2f2f4f;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Cabeçalho */
+th {
+    background: #00c3ff;
+    color: black;
+    padding: 12px;
+}
+
+/* Células */
+td {
+    padding: 12px;
+    color: white;
+    font-size: 14px;
+}
+
+/* Linhas alternadas */
+tr:nth-child(even) {
+    background: #3a3a5f;
+}
+
+/* Hover bonito */
+tr:hover {
+    background: #50507a;
+    transition: 0.3s;
+}
+
+/* Link */
+a {
+    display: inline-block;
+    margin-top: 20px;
+    color: #00c3ff;
+    text-decoration: none;
+    font-weight: bold;
+}
+/* ===== FORMULÁRIO BONITO ===== */
+
+.form-container {
+    max-width: 400px;
+}
+
+/* Inputs bonitos */
+form input {
+    width: 100%;
+    padding: 12px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    border: none;
+    border-radius: 8px;
+    outline: none;
+    background: #f1f1f1;
+    color: #000;
+    font-size: 14px;
+}
+
+/* Labels */
+form label {
+    color: #fff;
+    font-size: 14px;
+}
+
+/* Botão bonito */
+form button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: #00c3ff;
+    color: #000;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+form button:hover {
+    background: #00a2d3;
+}
