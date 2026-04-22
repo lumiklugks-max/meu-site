@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <title>Cadastro</title>
@@ -10,7 +10,7 @@
 <div class="container form-container">
     <h1>Cadastro</h1>
 
-    <form onsubmit="cadastrar(event)">
+    <form id="meuFormulario">
         <label>Nome:</label>
         <input type="text" id="nome" required>
 
@@ -23,10 +23,64 @@
         <label>Telefone:</label>
         <input type="text" id="telefone" required>
 
-        <button type="submit">Cadastrar</button>
+        <button type="button" id="btnCadastrar">Cadastrar</button>
     </form>
-    
 </div>
+
+<script type="module">
+    // 1. Importando o que é necessário
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+    // 2. Suas credenciais reais (conforme suas imagens)
+    const firebaseConfig = {
+        apiKey: "AIzaSyCZq4K95loqNKYYuPFFrMS9QcUTCQ-FYRU",
+        authDomain: "cadastroteste047.firebaseapp.com",
+        databaseURL: "https://cadastroteste047-default-rtdb.firebaseio.com",
+        projectId: "cadastroteste047",
+        storageBucket: "cadastroteste047.firebasestorage.app",
+        messagingSenderId: "908890693829",
+        appId: "1:908890693829:web:2bd31d24474e27507310ac"
+    };
+
+    // 3. Inicializando
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // 4. Função que pega os dados e envia para a nuvem
+    document.getElementById('btnCadastrar').addEventListener('click', () => {
+        const nome = document.getElementById('nome').value;
+        const dataNasc = document.getElementById('dataNascimento').value;
+        const email = document.getElementById('email').value;
+        const fone = document.getElementById('telefone').value;
+
+        // Validação básica: não deixa enviar se o nome estiver vazio
+        if (!nome || !email) {
+            alert("Por favor, preencha o Nome e o Email.");
+            return;
+        }
+
+        // Criando uma referência na pasta 'usuarios'
+        const usuariosRef = ref(db, 'usuarios');
+        const novoUsuarioRef = push(usuariosRef);
+
+        // Salvando os dados
+        set(novoUsuarioRef, {
+            nome: nome,
+            dataNascimento: dataNasc,
+            email: email,
+            telefone: fone,
+            dataRegistro: new Date().toLocaleString('pt-BR')
+        })
+        .then(() => {
+            alert("Cadastro realizado com sucesso!");
+            document.getElementById('meuFormulario').reset(); // Limpa o formulário
+        })
+        .catch((error) => {
+            alert("Erro ao salvar: " + error.message);
+        });
+    });
+</script>
 
 <script src="script.js"></script>
 </body>
