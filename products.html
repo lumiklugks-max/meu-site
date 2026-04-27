@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Cadastro de Produtos - Sistema Interno</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav style="text-align: center; margin-top: 20px;">
+    <a href="index.html" style="color: #00d2ff; margin: 0 15px;">Cadastrar Cliente</a>
+    <a href="showcase.html" style="color: #00d2ff; margin: 0 15px;">Ver Vitrine</a>
+</nav>
+
+<div class="container form-container">
+    <h1>Cadastrar Novo Produto</h1>
+
+    <form id="formProduto">
+        <label>Nome do Produto:</label>
+        <input type="text" id="nomeProduto" placeholder="Ex: Teclado Mecânico" required>
+
+        <label>Preço Unitário (R$):</label>
+        <input type="number" id="preco" step="0.01" placeholder="800.00" required>
+
+        <label>Desconto Máximo (%):</label>
+        <input type="number" id="descontoMax" placeholder="10" required>
+
+        <label>Quantidade em Estoque:</label>
+        <input type="number" id="estoque" placeholder="15" required>
+
+        <label>Link da Imagem (URL):</label>
+        <input type="text" id="linkImagem" placeholder="Cole o link da foto aqui">
+
+        <button type="button" id="btnSalvarProduto">Salvar no Estoque</button>
+    </form>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCZq4K95loqNKYYuPFFrMS9QcUTCQ-FYRU",
+        authDomain: "cadastroteste047.firebaseapp.com",
+        databaseURL: "https://cadastroteste047-default-rtdb.firebaseio.com",
+        projectId: "cadastroteste047",
+        storageBucket: "cadastroteste047.firebasestorage.app",
+        messagingSenderId: "908890693829",
+        appId: "1:908890693829:web:2bd31d24474e27507310ac"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    document.getElementById('btnSalvarProduto').addEventListener('click', () => {
+        const nome = document.getElementById('nomeProduto').value;
+        const preco = document.getElementById('preco').value;
+        const desconto = document.getElementById('descontoMax').value;
+        const estoque = document.getElementById('estoque').value;
+        const imagem = document.getElementById('linkImagem').value;
+
+        if (!nome || !preco || !estoque) {
+            alert("Por favor, preencha os dados principais do produto.");
+            return;
+        }
+
+        // Referência para a "pasta" produtos no Firebase
+        const produtosRef = ref(db, 'produtos');
+        const novoProdutoRef = push(produtosRef);
+
+        set(novoProdutoRef, {
+            nome: nome,
+            preco: parseFloat(preco),
+            descontoMax: parseFloat(desconto) || 0,
+            estoque: parseInt(estoque),
+            imagem: imagem || "https://via.placeholder.com/150", // Imagem padrão caso o campo esteja vazio
+            dataCadastro: new Date().toLocaleString('pt-BR')
+        })
+        .then(() => {
+            alert("Produto cadastrado com sucesso!");
+            document.getElementById('formProduto').reset();
+        })
+        .catch((error) => {
+            alert("Erro ao salvar produto: " + error.message);
+        });
+    });
+</script>
+
+</body>
+</html>

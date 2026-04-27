@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Nossa Vitrine</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Estilos específicos para a vitrine */
+        .vitrine-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        .card-produto {
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        .card-produto:hover {
+            transform: translateY(-5px);
+            border-color: #00d2ff;
+        }
+        .card-produto img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .card-produto h3 { margin: 15px 0 10px; color: #fff; }
+        .card-produto p { color: #00d2ff; font-weight: bold; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+
+<nav style="text-align: center; margin-top: 20px;">
+    <a href="index.html" style="color: #fff; margin: 0 15px;">Cadastro</a>
+    <a href="cart.html" style="color: #fff; margin: 0 15px;">Carrinho 🛒</a>
+</nav>
+
+<h1 style="text-align: center; margin-top: 30px;">Nossos Produtos</h1>
+
+<div id="lista-produtos" class="vitrine-grid">
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCZq4K95loqNKYYuPFFrMS9QcUTCQ-FYRU",
+        authDomain: "cadastroteste047.firebaseapp.com",
+        databaseURL: "https://cadastroteste047-default-rtdb.firebaseio.com",
+        projectId: "cadastroteste047",
+        storageBucket: "cadastroteste047.firebasestorage.app",
+        appId: "1:908890693829:web:2bd31d24474e27507310ac"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const produtosRef = ref(db, 'produtos');
+
+    const container = document.getElementById('lista-produtos');
+
+    // Função que puxa os dados do Firebase em tempo real
+    onValue(produtosRef, (snapshot) => {
+        container.innerHTML = ""; // Limpa a tela antes de carregar
+        const dados = snapshot.val();
+
+        if (dados) {
+            Object.keys(dados).forEach((id) => {
+                const produto = dados[id];
+                
+                // Criando o HTML do card
+                const card = `
+                    <div class="card-produto" onclick="verDetalhes('${id}')">
+                        <img src="${produto.imagem}" alt="${produto.nome}">
+                        <h3>${produto.nome}</h3>
+                        <p>R$ ${produto.preco.toFixed(2)}</p>
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+        } else {
+            container.innerHTML = "<p style='color:white; text-align:center; grid-column: 1/-1;'>Nenhum produto cadastrado ainda.</p>";
+        }
+    });
+
+    // Função para quando clicar no produto (vamos configurar a tela de detalhes depois)
+    window.verDetalhes = (id) => {
+        alert("Em breve: detalhes do produto " + id);
+        // Futuramente: window.location.href = `list.html?id=${id}`;
+    };
+</script>
+</body>
+</html>
