@@ -1,33 +1,126 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Usuários</title>
+    <title>Detalhes do Produto</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .produto-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 40px;
+            padding: 40px;
+            max-width: 1000px;
+            margin: auto;
+            background: #1a1a2e;
+            border-radius: 15px;
+            margin-top: 50px;
+        }
+        .produto-imagem img {
+            max-width: 400px;
+            border-radius: 10px;
+        }
+        .produto-info {
+            flex: 1;
+            color: white;
+        }
+        .preco-destaque {
+            font-size: 2em;
+            color: #00d2ff;
+            margin: 20px 0;
+        }
+        .btn-comprar {
+            background: #00d2ff;
+            color: #1a1a2e;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1.1em;
+        }
+        .btn-comprar:hover { background: #0099cc; }
+    </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Usuários</h1>
+<nav style="text-align: center; margin-top: 20px;">
+    <a href="showcase.html" style="color: #fff;">← Voltar para Vitrine</a>
+</nav>
 
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Nome</th>
-                    <th>Nascimento</th>
-                    <th>Email</th>
-                    <th>Telefone</th>
-                </tr>
-            </thead>
-            <tbody id="tabelaUsuarios"></tbody>
-        </table>
-    </div>
-
-    <a href="index.html">Voltar</a>
+<div id="detalhes-produto" class="produto-container">
+    <p style="color: white;">Carregando detalhes...</p>
 </div>
 
-<script src="script.js"></script>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCZq4K95loqNKYYuPFFrMS9QcUTCQ-FYRU",
+        authDomain: "cadastroteste047.firebaseapp.com",
+        databaseURL: "https://cadastroteste047-default-rtdb.firebaseio.com",
+        projectId: "cadastroteste047",
+        storageBucket: "cadastroteste047.firebasestorage.app",
+        appId: "1:908890693829:web:2bd31d24474e27507310ac"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // 1. Pegar o ID do produto que vem na URL (ex: list.html?id=-NXo...)
+    const urlParams = new URLSearchParams(window.location.search);
+    const produtoId = urlParams.get('id');
+
+    const container = document.getElementById('detalhes-produto');
+
+    if (produtoId) {
+        const produtoRef = ref(db, `produtos/${produtoId}`);
+        
+        get(produtoRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                const produto = snapshot.val();
+                
+                container.innerHTML = `
+                    <div class="produto-imagem">
+                        <img src="${produto.imagem}" alt="${produto.nome}">
+                    </div>
+                    <div class="produto-info">
+                        <h1>${produto.nome}</h1>
+                        <p>${produto.descricao || "Sem descrição disponível."}</p>
+                        <p class="preco-destaque">R$ ${produto.preco.toFixed(2)}</p>
+                        <p>Estoque disponível: <strong>${produto.estoque} unidades</strong></p>
+                        
+                        <label>Quantidade:</label>
+                        <input type="number" id="quantidade" value="1" min="1" max="${produto.estoque}" 
+                               style="width: 60px; padding: 5px; margin-bottom: 20px;">
+                        
+                        <br>
+                        <button class="btn-comprar" onclick="adicionarAoCarrinho('${produtoId}', '${produto.nome}', ${produto.preco})">
+                            Adicionar ao Carrinho
+                        </button>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = "<p style='color:white;'>Produto não encontrado.</p>";
+            }
+        });
+    }
+
+    // Função para salvar no carrinho (usaremos o localStorage por enquanto)
+    window.adicionarAoCarrinho = (id, nome, preco) => {
+        const qtd = document.getElementById('quantidade').value;
+        const item = { id, nome, preco, quantidade: parseInt(qtd) };
+        
+        // Pega o que já tem no carrinho ou cria um vazio
+        let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
+        carrinho.push(item);
+        
+        localStorage.setItem('carrinho', JSON.stringify(carrinho));
+        
+        alert(`${nome} adicionado ao carrinho!`);
+        window.location.href = 'cart.html';
+    };
+</script>
 </body>
 </html>
