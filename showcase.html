@@ -44,7 +44,7 @@
 <h1 style="text-align: center; margin-top: 30px;">Nossos Produtos</h1>
 
 <div id="lista-produtos" class="vitrine-grid">
-    </div>
+</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -66,7 +66,7 @@
     const container = document.getElementById('lista-produtos');
 
     onValue(produtosRef, (snapshot) => {
-        container.innerHTML = "";
+        container.innerHTML = ""; 
         const dados = snapshot.val();
 
         if (dados) {
@@ -87,8 +87,9 @@
         }
     });
 
+
     window.verDetalhes = (id) => {
-        alert("Em breve: detalhes do produto " + id);
+        window.location.href = `list.html?id=${id}`;
     };
 </script>
 </body>
