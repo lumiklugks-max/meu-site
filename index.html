@@ -2,57 +2,108 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Cadastro de Cliente</title>
+    <title>Login / Cadastro - Minha Loja</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .auth-container { max-width: 400px; margin: 50px auto; padding: 20px; background: #1a1a2e; border-radius: 15px; color: white; }
+        .tabs { display: flex; margin-bottom: 20px; cursor: pointer; }
+        .tab { flex: 1; text-align: center; padding: 10px; border-bottom: 2px solid #333; }
+        .tab.active { border-color: #00d2ff; color: #00d2ff; font-weight: bold; }
+        form { display: none; flex-direction: column; gap: 15px; }
+        form.active { display: flex; }
+        input { padding: 12px; border-radius: 5px; border: none; background: #16213e; color: white; border: 1px solid #333; }
+        button { padding: 15px; border-radius: 5px; border: none; background: #00d2ff; color: #1a1a2e; font-weight: bold; cursor: pointer; }
+        .toggle-text { text-align: center; font-size: 0.9em; margin-top: 15px; cursor: pointer; color: #00d2ff; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <form id="cadastroForm">
-            <h2>Bem-vindo!</h2>
-            <p>Cadastre-se para acessar nossa vitrine</p>
-            
-            <input type="text" id="nome" placeholder="Seu Nome Completo" required>
-            <input type="text" id="whatsapp" placeholder="Seu WhatsApp" required>
-            
-            <button type="submit">Acessar Vitrine</button>
-        </form>
+
+<div class="auth-container">
+    <div class="tabs">
+        <div id="tabLogin" class="tab active" onclick="switchTab('login')">Entrar</div>
+        <div id="tabCadastro" class="tab" onclick="switchTab('cadastro')">Criar Conta</div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+    <form id="formLogin" class="active">
+        <h2>Bem-vindo de volta!</h2>
+        <input type="email" id="loginEmail" placeholder="Seu E-mail" required>
+        <input type="password" id="loginSenha" placeholder="Sua Senha" required>
+        <button type="submit">Entrar na Loja</button>
+    </form>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCZq4K95loqNKYYuPFFrMS9QcUTCQ-FYRU",
-            authDomain: "cadastroteste047.firebaseapp.com",
-            databaseURL: "https://cadastroteste047-default-rtdb.firebaseio.com",
-            projectId: "cadastroteste047",
-            storageBucket: "cadastroteste047.firebasestorage.app",
-            appId: "1:908890693829:web:2bd31d24474e27507310ac"
+    <form id="formCadastro">
+        <h2>Crie sua conta</h2>
+        <input type="text" id="cadNome" placeholder="Nome Completo" required>
+        <input type="email" id="cadEmail" placeholder="E-mail" required>
+        <input type="password" id="cadSenha" placeholder="Crie uma Senha" required>
+        <input type="date" id="cadNascimento" required title="Data de Nascimento">
+        <input type="tel" id="cadTelefone" placeholder="Telefone (WhatsApp)" required>
+        <button type="submit">Finalizar Cadastro</button>
+    </form>
+</div>
+
+<script type="module">
+    // Importando o Firebase Auth e Database
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCZq4K95loqNKYYuPFFrMS9QcUTCQ-FYRU",
+        authDomain: "cadastroteste047.firebaseapp.com",
+        databaseURL: "https://cadastroteste047-default-rtdb.firebaseio.com",
+        projectId: "cadastroteste047",
+        storageBucket: "cadastroteste047.firebasestorage.app",
+        appId: "1:908890693829:web:2bd31d24474e27507310ac"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    // Lógica de alternar abas
+    window.switchTab = (type) => {
+        const isLogin = type === 'login';
+        document.getElementById('tabLogin').classList.toggle('active', isLogin);
+        document.getElementById('tabCadastro').classList.toggle('active', !isLogin);
+        document.getElementById('formLogin').classList.toggle('active', isLogin);
+        document.getElementById('formCadastro').classList.toggle('active', !isLogin);
+    };
+
+    // Ação de CADASTRO
+    document.getElementById('formCadastro').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('cadEmail').value;
+        const senha = document.getElementById('cadSenha').value;
+        const dadosExtra = {
+            nome: document.getElementById('cadNome').value,
+            nascimento: document.getElementById('cadNascimento').value,
+            telefone: document.getElementById('cadTelefone').value
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
-        document.getElementById('cadastroForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            const nome = document.getElementById('nome').value;
-            const whatsapp = document.getElementById('whatsapp').value;
-
-            // Salva no Firebase
-            push(ref(db, 'clientes'), {
-                nome: nome,
-                whatsapp: whatsapp,
-                data: new Date().toISOString()
-            }).then(() => {
-                alert("Cadastro realizado! Aproveite nossas ofertas.");
-                // A MÁGICA ACONTECE AQUI:
+        createUserWithEmailAndPassword(auth, email, senha)
+            .then((userCredential) => {
+                const user = userCredential.user;
+                // Salva os dados extras no Database usando o ID do usuário
+                set(ref(db, 'usuarios/' + user.uid), dadosExtra);
+                alert("Conta criada com sucesso!");
                 window.location.href = 'showcase.html';
-            }).catch((error) => {
-                alert("Erro ao cadastrar: " + error.message);
-            });
-        });
-    </script>
+            })
+            .catch((error) => alert("Erro no cadastro: " + error.message));
+    });
+
+    // Ação de LOGIN
+    document.getElementById('formLogin').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value;
+        const senha = document.getElementById('loginSenha').value;
+
+        signInWithEmailAndPassword(auth, email, senha)
+            .then(() => {
+                window.location.href = 'showcase.html';
+            })
+            .catch((error) => alert("Erro ao entrar: Verifique e-mail e senha."));
+    });
+</script>
 </body>
 </html>
