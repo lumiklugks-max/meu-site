@@ -5,56 +5,28 @@
     <title>Detalhes do Produto</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .produto-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 40px;
-            padding: 40px;
-            max-width: 1000px;
-            margin: auto;
-            background: #1a1a2e;
-            border-radius: 15px;
-            margin-top: 50px;
-        }
-        .produto-imagem img {
-            max-width: 400px;
-            border-radius: 10px;
-        }
-        .produto-info {
-            flex: 1;
-            color: white;
-        }
-        .preco-destaque {
-            font-size: 2em;
-            color: #00d2ff;
-            margin: 20px 0;
-        }
-        .btn-comprar {
-            background: #00d2ff;
-            color: #1a1a2e;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 1.1em;
-        }
-        .btn-comprar:hover { background: #0099cc; }
+        .produto-container { display: flex; flex-wrap: wrap; gap: 40px; padding: 40px; max-width: 1000px; margin: auto; background: #1a1a2e; border-radius: 15px; margin-top: 50px; color: white; }
+        .produto-imagem img { max-width: 400px; border-radius: 10px; }
+        .produto-info { flex: 1; }
+        .preco-original { text-decoration: line-through; color: #888; font-size: 1.2em; }
+        .preco-destaque { font-size: 2.2em; color: #00d2ff; margin: 10px 0; }
+        .desconto-tag { background: #ff4b2b; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; margin-bottom: 15px; display: inline-block; }
+        .descricao-texto { margin: 20px 0; line-height: 1.6; color: #ccc; }
+        .btn-comprar { background: #00d2ff; color: #1a1a2e; padding: 15px 30px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 1.1em; width: 100%; }
     </style>
 </head>
 <body>
 
-<nav style="text-align: center; margin-top: 20px;">
-    <a href="showcase.html" style="color: #fff;">← Voltar para Vitrine</a>
+<nav style="padding: 20px; text-align: center;">
+    <a href="showcase.html" style="color: #00d2ff;">← Voltar para a Vitrine</a>
 </nav>
 
-<div id="detalhes-produto" class="produto-container">
-    <p style="color: white;">Carregando detalhes...</p>
-</div>
+<div id="detalhe-produto">
+    </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCZq4K95loqNKYYuPFFrMS9QcUTCQ-FYRU",
@@ -68,57 +40,83 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // 1. Pegar o ID do produto que vem na URL (ex: list.html?id=-NXo...)
     const urlParams = new URLSearchParams(window.location.search);
     const produtoId = urlParams.get('id');
-
-    const container = document.getElementById('detalhes-produto');
+    const container = document.getElementById('detalhe-produto');
 
     if (produtoId) {
-        const produtoRef = ref(db, `produtos/${produtoId}`);
-        
-        get(produtoRef).then((snapshot) => {
-            if (snapshot.exists()) {
-                const produto = snapshot.val();
-                
+        onValue(ref(db, `produtos/${produtoId}`), (snapshot) => {
+            const p = snapshot.val();
+            if (p) {
                 container.innerHTML = `
-                    <div class="produto-imagem">
-                        <img src="${produto.imagem}" alt="${produto.nome}">
-                    </div>
-                    <div class="produto-info">
-                        <h1>${produto.nome}</h1>
-                        <p>${produto.descricao || "Sem descrição disponível."}</p>
-                        <p class="preco-destaque">R$ ${produto.preco.toFixed(2)}</p>
-                        <p>Estoque disponível: <strong>${produto.estoque} unidades</strong></p>
-                        
-                        <label>Quantidade:</label>
-                        <input type="number" id="quantidade" value="1" min="1" max="${produto.estoque}" 
-                               style="width: 60px; padding: 5px; margin-bottom: 20px;">
-                        
-                        <br>
-                        <button class="btn-comprar" onclick="adicionarAoCarrinho('${produtoId}', '${produto.nome}', ${produto.preco})">
-                            Adicionar ao Carrinho
-                        </button>
+                    <div class="produto-container">
+                        <div class="produto-imagem">
+                            <img src="${p.imagem}" alt="${p.nome}">
+                        </div>
+                        <div class="produto-info">
+                            <h1>${p.nome}</h1>
+                            <div class="descricao-texto">${p.descricao || "Sem descrição."}</div>
+                            
+                            <p class="preco-original">R$ ${p.preco.toFixed(2)}</p>
+                            <div id="area-preco">
+                                </div>
+
+                            <p>Estoque: <strong>${p.estoque} unidades</strong></p>
+                            
+                            <label>Quantidade:</label>
+                            <input type="number" id="quantidade" value="1" min="1" max="${p.estoque}" 
+                                   oninput="atualizarCalculo(${p.preco}, ${p.descontoMax})"
+                                   style="width: 70px; padding: 8px; margin: 15px 0; border-radius: 5px;">
+                            
+                            <button class="btn-comprar" onclick="adicionarAoCarrinho('${produtoId}', '${p.nome}', ${p.preco}, ${p.descontoMax})">
+                                Adicionar ao Carrinho
+                            </button>
+                        </div>
                     </div>
                 `;
-            } else {
-                container.innerHTML = "<p style='color:white;'>Produto não encontrado.</p>";
+                // Calcula o preço inicial (1 unidade)
+                atualizarCalculo(p.preco, p.descontoMax);
             }
         });
     }
 
-    // Função para salvar no carrinho (usaremos o localStorage por enquanto)
-    window.adicionarAoCarrinho = (id, nome, preco) => {
-        const qtd = document.getElementById('quantidade').value;
-        const item = { id, nome, preco, quantidade: parseInt(qtd) };
+    // A LÓGICA DO DESCONTO PROGRESSIVO
+    window.atualizarCalculo = (precoBase, maxDesc) => {
+        const qtd = parseInt(document.getElementById('quantidade').value) || 1;
         
-        // Pega o que já tem no carrinho ou cria um vazio
+        // Regra: 3% inicial + 0.5% por cada item extra
+        let porcDesconto = 3 + (qtd - 1) * 0.5;
+        
+        // Trava no Desconto Máximo que você cadastrou no products.html
+        if (porcDesconto > maxDesc) porcDesconto = maxDesc;
+
+        const valorComDesconto = precoBase * (1 - porcDesconto / 100);
+        
+        document.getElementById('area-preco').innerHTML = `
+            <div class="desconto-tag">GANHE ${porcDesconto.toFixed(1)}% DE DESCONTO</div>
+            <p class="preco-destaque">R$ ${valorComDesconto.toFixed(2)} <small style="font-size: 0.4em; color: white;">/unidade</small></p>
+        `;
+    };
+
+    window.adicionarAoCarrinho = (id, nome, precoOriginal, maxDesc) => {
+        const qtd = parseInt(document.getElementById('quantidade').value);
+        let porcDesconto = 3 + (qtd - 1) * 0.5;
+        if (porcDesconto > maxDesc) porcDesconto = maxDesc;
+        
+        const precoFinal = precoOriginal * (1 - porcDesconto / 100);
+
+        const item = { 
+            id, 
+            nome, 
+            precoUnitario: precoFinal, 
+            quantidade: qtd, 
+            descontoAplicado: porcDesconto 
+        };
+        
         let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
         carrinho.push(item);
-        
         localStorage.setItem('carrinho', JSON.stringify(carrinho));
         
-        alert(`${nome} adicionado ao carrinho!`);
         window.location.href = 'cart.html';
     };
 </script>
