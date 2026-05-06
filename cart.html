@@ -1,73 +1,22 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Meu Carrinho 🛒</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        .cart-container {
-            max-width: 800px;
-            margin: 50px auto;
-            padding: 20px;
-            background: #1a1a2e;
-            border-radius: 15px;
-            color: white;
-        }
-        .cart-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid #333;
-        }
-        .total-container {
-            text-align: right;
-            padding: 20px;
-            font-size: 1.5em;
-        }
-        .btn-finalizar {
-            background: #25d366; /* Cor do WhatsApp */
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            font-size: 1.2em;
-        }
-        .btn-limpar {
-            background: #ff4b2b;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-    </style>
-</head>
-<body>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-<nav style="padding: 20px;">
-    <a href="showcase.html" style="color: #00d2ff;">← Continuar Comprando</a>
-</nav>
+    const firebaseConfig = {
+        apiKey: "AIzaSyCZq4K95loqNKYYuPFFrMS9QcUTCQ-FYRU",
+        authDomain: "cadastroteste047.firebaseapp.com",
+        databaseURL: "https://cadastroteste047-default-rtdb.firebaseio.com",
+        projectId: "cadastroteste047",
+        storageBucket: "cadastroteste047.firebasestorage.app",
+        appId: "1:908890693829:web:2bd31d24474e27507310ac"
+    };
 
-<div class="cart-container">
-    <h1>Meu Carrinho</h1>
-    <div id="itens-carrinho">
-        </div>
-    
-    <div class="total-container">
-        Total: <span id="valor-total" style="color: #00d2ff;">R$ 0,00</span>
-    </div>
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
 
-    <button class="btn-finalizar" onclick="finalizarPedido()">Finalizar Pedido via WhatsApp 📱</button>
-    <br><br>
-    <button class="btn-limpar" onclick="limparCarrinho()" style="width: 100%;">Esvaziar Carrinho</button>
-</div>
-
-<script>
-    function carregarCarrinho() {
+    window.carregarCarrinho = function() {
         const itensArea = document.getElementById('itens-carrinho');
         const totalArea = document.getElementById('valor-total');
         const carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
@@ -78,15 +27,18 @@
         if (carrinho.length === 0) {
             itensArea.innerHTML = '<p>Seu carrinho está vazio.</p>';
         } else {
-            carrinho.forEach((item, index) => {
-                const subtotal = item.preco * item.quantidade;
+            carrinho.forEach((item) => {
+                // USANDO OS NOVOS NOMES DE CAMPOS: precoUnitario e descontoAplicado
+                const preco = item.precoUnitario || item.preco; // Garante compatibilidade
+                const subtotal = preco * item.quantidade;
                 somaTotal += subtotal;
                 
                 itensArea.innerHTML += `
                     <div class="cart-item">
                         <div>
-                            <strong>${item.nome}</strong><br>
-                            Qtd: ${item.quantidade} x R$ ${item.preco.toFixed(2)}
+                            <strong>${item.nome}</strong> 
+                            <span style="color: #25d366; font-size: 0.8em;">(-${item.descontoAplicado}% off)</span><br>
+                            Qtd: ${item.quantidade} x R$ ${preco.toFixed(2)}
                         </div>
                         <div>
                             R$ ${subtotal.toFixed(2)}
@@ -98,34 +50,44 @@
         totalArea.innerText = `R$ ${somaTotal.toFixed(2)}`;
     }
 
-    function limparCarrinho() {
+    window.limparCarrinho = function() {
         localStorage.removeItem('carrinho');
-        carregarCarrinho();
+        window.carregarCarrinho();
     }
 
-    function finalizarPedido() {
+    document.getElementById('btnFinalizar').addEventListener('click', () => {
         const carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
         if (carrinho.length === 0) return alert("Carrinho vazio!");
 
-        let mensagem = "Olá! Gostaria de fazer um pedido:%0A%0A";
-        let total = 0;
+        const usuario = auth.currentUser;
+        const emailCliente = usuario ? usuario.email : "Cliente não logado";
+        
+        let totalPedido = 0;
+        let resumoTexto = "";
 
         carrinho.forEach(item => {
-            mensagem += `• ${item.nome} (Qtd: ${item.quantidade}) - R$ ${(item.preco * item.quantidade).toFixed(2)}%0A`;
-            total += item.preco * item.quantidade;
+            const preco = item.precoUnitario || item.preco;
+            resumoTexto += `• ${item.nome} (Qtd: ${item.quantidade}) - R$ ${(preco * item.quantidade).toFixed(2)}%0A`;
+            totalPedido += preco * item.quantidade;
         });
 
-        mensagem += `%0A*Total: R$ ${total.toFixed(2)}*`;
-        
-        // Substitua o número abaixo pelo número do seu tio (DDI + DDD + Número)
-        // Exemplo: 55 11 999999999
-        const foneTio = "55XXXXXXXXXXX"; 
-        
-        window.open(`https://wa.me/${foneTio}?text=${mensagem}`, '_blank');
-    }
+        const novoPedido = {
+            cliente: emailCliente,
+            itens: carrinho,
+            total: totalPedido,
+            data: new Date().toLocaleString('pt-BR'),
+            status: 'Pendente'
+        };
 
-    // Inicia a página carregando os dados
-    carregarCarrinho();
+        push(ref(db, 'pedidos'), novoPedido).then(() => {
+            const foneTio = "55XXXXXXXXXXX"; // COLOQUE O NÚMERO AQUI
+            const mensagem = `Olá! Novo pedido de ${emailCliente}:%0A%0A${resumoTexto}%0A*Total: R$ ${totalPedido.toFixed(2)}*`;
+            
+            window.open(`https://wa.me/${foneTio}?text=${mensagem}`, '_blank');
+            localStorage.removeItem('carrinho');
+            window.carregarCarrinho();
+        });
+    });
+
+    window.carregarCarrinho();
 </script>
-</body>
-</html>
