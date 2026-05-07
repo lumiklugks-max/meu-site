@@ -2,39 +2,45 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Login / Cadastro - Minha Loja</title>
+    <title>Login / Cadastro</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .auth-container { max-width: 400px; margin: 50px auto; padding: 20px; background: #1a1a2e; border-radius: 15px; color: white; }
-        .tabs { display: flex; margin-bottom: 20px; cursor: pointer; border-bottom: 2px solid #333; }
-        .tab { flex: 1; text-align: center; padding: 10px; transition: 0.3s; }
-        .tab.active { border-bottom: 3px solid #00d2ff; color: #00d2ff; font-weight: bold; }
+        /* Estilos de emergência caso o style.css falhe */
+        body { background: #1a1a2e; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: sans-serif; }
+        .auth-container { width: 100%; max-width: 400px; background: #16213e; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .tabs { display: flex; margin-bottom: 25px; border-bottom: 2px solid #0f3460; }
+        .tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; transition: 0.3s; color: #888; }
+        .tab.active { color: #00d2ff; border-bottom: 3px solid #00d2ff; font-weight: bold; }
+        
+        /* O segredo para não aparecer tudo junto: */
         form { display: none; flex-direction: column; gap: 15px; }
         form.active { display: flex; }
-        input { padding: 12px; border-radius: 5px; border: 1px solid #333; background: #16213e; color: white; }
-        button { padding: 15px; border-radius: 5px; border: none; background: #00d2ff; color: #1a1a2e; font-weight: bold; cursor: pointer; }
+        
+        input { padding: 12px; border-radius: 5px; border: 1px solid #0f3460; background: #1a1a2e; color: white; outline: none; }
+        button { padding: 15px; border-radius: 5px; border: none; background: #00d2ff; color: #1a1a2e; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #0099cc; }
     </style>
 </head>
 <body>
 
 <div class="auth-container">
     <div class="tabs">
-        <div class="tab active" id="btnTabLogin">Login</div>
-        <div class="tab" id="btnTabCadastro">Cadastro</div>
+        <div class="tab active" id="tabLoginBtn">Entrar</div>
+        <div class="tab" id="tabCadastroBtn">Cadastrar</div>
     </div>
 
-    <form id="formLogin" class="active">
-        <input type="email" id="lEmail" placeholder="Seu E-mail" required>
-        <input type="password" id="lSenha" placeholder="Sua Senha" required>
-        <button type="submit">Entrar</button>
+    <form id="fLogin" class="active">
+        <input type="email" id="lEmail" placeholder="E-mail" required>
+        <input type="password" id="lSenha" placeholder="Senha" required>
+        <button type="submit">Aceder à Conta</button>
     </form>
 
-    <form id="formCadastro">
+    <form id="fCadastro">
         <input type="text" id="cNome" placeholder="Nome Completo" required>
-        <input type="email" id="cEmail" placeholder="E-mail" required>
-        <input type="password" id="cSenha" placeholder="Senha (min. 6 chars)" required>
-        <input type="tel" id="cTel" placeholder="WhatsApp (DDD+Número)" required>
-        <button type="submit">Criar Minha Conta</button>
+        <input type="email" id="cEmail" placeholder="Seu melhor e-mail" required>
+        <input type="password" id="cSenha" placeholder="Crie uma senha" required>
+        <input type="tel" id="cTel" placeholder="WhatsApp (Ex: 11999998888)" required>
+        <button type="submit">Finalizar Cadastro</button>
     </form>
 </div>
 
@@ -56,53 +62,35 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // Lógica das abas (sem usar 'onclick' no HTML)
-    const tLog = document.getElementById('btnTabLogin');
-    const tCad = document.getElementById('btnTabCadastro');
-    const fLog = document.getElementById('formLogin');
-    const fCad = document.getElementById('formCadastro');
+    // Lógica das Abas (JavaScript puro)
+    const btnL = document.getElementById('tabLoginBtn');
+    const btnC = document.getElementById('tabCadastroBtn');
+    const formL = document.getElementById('fLogin');
+    const formC = document.getElementById('fCadastro');
 
-    tLog.addEventListener('click', () => {
-        tLog.classList.add('active'); tCad.classList.remove('active');
-        fLog.classList.add('active'); fCad.classList.remove('active');
+    btnL.addEventListener('click', () => {
+        btnL.classList.add('active'); btnC.classList.remove('active');
+        formL.classList.add('active'); formC.classList.remove('active');
     });
 
-    tCad.addEventListener('click', () => {
-        tCad.classList.add('active'); tLog.classList.remove('active');
-        fCad.classList.add('active'); fLog.classList.remove('active');
+    btnC.addEventListener('click', () => {
+        btnC.classList.add('active'); btnL.classList.remove('active');
+        formC.classList.add('active'); formL.classList.remove('active');
     });
 
-    // Cadastro
-    fCad.addEventListener('submit', (e) => {
+    // Evento de Cadastro
+    formC.addEventListener('submit', (e) => {
         e.preventDefault();
         const email = document.getElementById('cEmail').value;
         const senha = document.getElementById('cSenha').value;
         
         createUserWithEmailAndPassword(auth, email, senha)
-            .then((res) => {
-                const dados = {
+            .then((u) => {
+                const info = {
                     nome: document.getElementById('cNome').value,
                     telefone: document.getElementById('cTel').value,
                     email: email
                 };
-                set(ref(db, 'usuarios/' + res.user.uid), dados).then(() => {
-                    alert("Bem-vindo(a)!");
-                    window.location.href = 'showcase.html';
-                });
-            })
-            .catch(err => alert("Erro no cadastro: " + err.message));
-    });
-
-    // Login
-    fLog.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const email = document.getElementById('lEmail').value;
-        const senha = document.getElementById('lSenha').value;
-        
-        signInWithEmailAndPassword(auth, email, senha)
-            .then(() => window.location.href = 'showcase.html')
-            .catch(() => alert("E-mail ou senha incorretos."));
-    });
-</script>
-</body>
-</html>
+                set(ref(db, 'usuarios/' + u.user.uid), info).then(() => {
+                    alert("Conta criada!");
+                    window.location.href = 'showcase.
