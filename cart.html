@@ -1,7 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Meu Carrinho 🛒</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .cart-container { max-width: 800px; margin: 50px auto; padding: 20px; background: #1a1a2e; border-radius: 15px; color: white; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #333; }
+        .total-container { text-align: right; padding: 20px; font-size: 1.5em; }
+        .btn-finalizar { background: #25d366; color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.2em; }
+        .btn-limpar { background: #ff4b2b; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<nav style="padding: 20px;">
+    <a href="showcase.html" style="color: #00d2ff;">← Continuar Comprando</a>
+</nav>
+
+<div class="cart-container">
+    <h1>Meu Carrinho</h1>
+    <div id="itens-carrinho"></div>
+    
+    <div class="total-container">
+        Total: <span id="valor-total" style="color: #00d2ff;">R$ 0,00</span>
+    </div>
+
+    <button class="btn-finalizar" id="btnFinalizar">Finalizar Pedido via WhatsApp 📱</button>
+    <br><br>
+    <button class="btn-limpar" id="btnLimpar" style="width: 100%;">Esvaziar Carrinho</button>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-    import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCZq4K95loqNKYYuPFFrMS9QcUTCQ-FYRU",
@@ -16,7 +49,16 @@
     const db = getDatabase(app);
     const auth = getAuth(app);
 
-    window.carregarCarrinho = function() {
+    let usuarioLogadoEmail = "Cliente não identificado";
+
+    // Monitora se o usuário está logado para pegar o email dele
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            usuarioLogadoEmail = user.email;
+        }
+    });
+
+    function carregarCarrinho() {
         const itensArea = document.getElementById('itens-carrinho');
         const totalArea = document.getElementById('valor-total');
         const carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
@@ -28,16 +70,16 @@
             itensArea.innerHTML = '<p>Seu carrinho está vazio.</p>';
         } else {
             carrinho.forEach((item) => {
-                // USANDO OS NOVOS NOMES DE CAMPOS: precoUnitario e descontoAplicado
-                const preco = item.precoUnitario || item.preco; // Garante compatibilidade
+                const preco = item.precoUnitario || item.preco || 0;
                 const subtotal = preco * item.quantidade;
+                const desc = item.descontoAplicado || 0;
                 somaTotal += subtotal;
                 
                 itensArea.innerHTML += `
                     <div class="cart-item">
                         <div>
                             <strong>${item.nome}</strong> 
-                            <span style="color: #25d366; font-size: 0.8em;">(-${item.descontoAplicado}% off)</span><br>
+                            <span style="color: #25d366; font-size: 0.8em;">(-${desc}% off)</span><br>
                             Qtd: ${item.quantidade} x R$ ${preco.toFixed(2)}
                         </div>
                         <div>
@@ -50,29 +92,26 @@
         totalArea.innerText = `R$ ${somaTotal.toFixed(2)}`;
     }
 
-    window.limparCarrinho = function() {
+    document.getElementById('btnLimpar').addEventListener('click', () => {
         localStorage.removeItem('carrinho');
-        window.carregarCarrinho();
-    }
+        carregarCarrinho();
+    });
 
     document.getElementById('btnFinalizar').addEventListener('click', () => {
         const carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
         if (carrinho.length === 0) return alert("Carrinho vazio!");
 
-        const usuario = auth.currentUser;
-        const emailCliente = usuario ? usuario.email : "Cliente não logado";
-        
         let totalPedido = 0;
         let resumoTexto = "";
 
         carrinho.forEach(item => {
-            const preco = item.precoUnitario || item.preco;
+            const preco = item.precoUnitario || item.preco || 0;
             resumoTexto += `• ${item.nome} (Qtd: ${item.quantidade}) - R$ ${(preco * item.quantidade).toFixed(2)}%0A`;
             totalPedido += preco * item.quantidade;
         });
 
         const novoPedido = {
-            cliente: emailCliente,
+            cliente: usuarioLogadoEmail,
             itens: carrinho,
             total: totalPedido,
             data: new Date().toLocaleString('pt-BR'),
@@ -81,13 +120,16 @@
 
         push(ref(db, 'pedidos'), novoPedido).then(() => {
             const foneTio = "55XXXXXXXXXXX"; // COLOQUE O NÚMERO AQUI
-            const mensagem = `Olá! Novo pedido de ${emailCliente}:%0A%0A${resumoTexto}%0A*Total: R$ ${totalPedido.toFixed(2)}*`;
+            const mensagem = `Olá! Novo pedido de ${usuarioLogadoEmail}:%0A%0A${resumoTexto}%0A*Total: R$ ${totalPedido.toFixed(2)}*`;
             
             window.open(`https://wa.me/${foneTio}?text=${mensagem}`, '_blank');
             localStorage.removeItem('carrinho');
-            window.carregarCarrinho();
-        });
+            carregarCarrinho();
+        }).catch(err => alert("Erro ao salvar pedido: " + err.message));
     });
 
-    window.carregarCarrinho();
+    // Inicia a visualização
+    carregarCarrinho();
 </script>
+</body>
+</html>
