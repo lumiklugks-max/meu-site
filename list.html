@@ -10,7 +10,7 @@
         .produto-info { flex: 1; }
         .preco-original { text-decoration: line-through; color: #888; font-size: 1.2em; }
         .preco-destaque { font-size: 2.2em; color: #00d2ff; margin: 10px 0; }
-        .desconto-tag { background: #ff4b2b; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; margin-bottom: 15px; display: inline-block; }
+        .desconto-tag { background: #25d366; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; margin-bottom: 15px; display: inline-block; }
         .descricao-texto { margin: 20px 0; line-height: 1.6; color: #ccc; }
         .btn-comprar { background: #00d2ff; color: #1a1a2e; padding: 15px 30px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 1.1em; width: 100%; }
     </style>
@@ -21,8 +21,7 @@
     <a href="showcase.html" style="color: #00d2ff;">← Voltar para a Vitrine</a>
 </nav>
 
-<div id="detalhe-produto">
-    </div>
+<div id="detalhe-produto"></div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -57,9 +56,8 @@
                             <h1>${p.nome}</h1>
                             <div class="descricao-texto">${p.descricao || "Sem descrição."}</div>
                             
-                            <p class="preco-original">R$ ${p.preco.toFixed(2)}</p>
-                            <div id="area-preco">
-                                </div>
+                            <p id="preco-riscado" class="preco-original" style="display:none;">R$ ${p.preco.toFixed(2)}</p>
+                            <div id="area-preco"></div>
 
                             <p>Estoque: <strong>${p.estoque} unidades</strong></p>
                             
@@ -74,33 +72,45 @@
                         </div>
                     </div>
                 `;
-                // Calcula o preço inicial (1 unidade)
                 atualizarCalculo(p.preco, p.descontoMax);
             }
         });
     }
 
-    // A LÓGICA DO DESCONTO PROGRESSIVO
     window.atualizarCalculo = (precoBase, maxDesc) => {
         const qtd = parseInt(document.getElementById('quantidade').value) || 1;
+        const precoRiscado = document.getElementById('preco-riscado');
         
-        // Regra: 3% inicial + 0.5% por cada item extra
-        let porcDesconto = 3 + (qtd - 1) * 0.5;
+        let porcDesconto = 0;
+
+        // Regra atualizada: 0% para 1 un, 3% para 2 un, +0.5% por item adicional
+        if (qtd > 1) {
+            porcDesconto = 3 + (qtd - 2) * 0.5;
+        }
         
-        // Trava no Desconto Máximo que você cadastrou no products.html
         if (porcDesconto > maxDesc) porcDesconto = maxDesc;
 
-        const valorComDesconto = precoBase * (1 - porcDesconto / 100);
-        
-        document.getElementById('area-preco').innerHTML = `
-            <div class="desconto-tag">GANHE ${porcDesconto.toFixed(1)}% DE DESCONTO</div>
-            <p class="preco-destaque">R$ ${valorComDesconto.toFixed(2)} <small style="font-size: 0.4em; color: white;">/unidade</small></p>
-        `;
+        const valorUnitarioFinal = precoBase * (1 - porcDesconto / 100);
+        const areaPreco = document.getElementById('area-preco');
+
+        if (porcDesconto > 0) {
+            precoRiscado.style.display = "block";
+            areaPreco.innerHTML = `
+                <div class="desconto-tag">GANHE ${porcDesconto.toFixed(1)}% DE DESCONTO</div>
+                <p class="preco-destaque">R$ ${valorUnitarioFinal.toFixed(2)} <small style="font-size: 0.4em; color: white;">/unidade</small></p>
+            `;
+        } else {
+            precoRiscado.style.display = "none";
+            areaPreco.innerHTML = `
+                <p class="preco-destaque">R$ ${precoBase.toFixed(2)}</p>
+            `;
+        }
     };
 
     window.adicionarAoCarrinho = (id, nome, precoOriginal, maxDesc) => {
-        const qtd = parseInt(document.getElementById('quantidade').value);
-        let porcDesconto = 3 + (qtd - 1) * 0.5;
+        const qtd = parseInt(document.getElementById('quantidade').value) || 1;
+        let porcDesconto = 0;
+        if (qtd > 1) porcDesconto = 3 + (qtd - 2) * 0.5;
         if (porcDesconto > maxDesc) porcDesconto = maxDesc;
         
         const precoFinal = precoOriginal * (1 - porcDesconto / 100);
