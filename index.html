@@ -5,20 +5,18 @@
     <title>Login / Cadastro</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Estilos de emergência caso o style.css falhe */
         body { background: #1a1a2e; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: sans-serif; }
         .auth-container { width: 100%; max-width: 400px; background: #16213e; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .tabs { display: flex; margin-bottom: 25px; border-bottom: 2px solid #0f3460; }
         .tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; transition: 0.3s; color: #888; }
         .tab.active { color: #00d2ff; border-bottom: 3px solid #00d2ff; font-weight: bold; }
         
-        /* O segredo para não aparecer tudo junto: */
         form { display: none; flex-direction: column; gap: 15px; }
         form.active { display: flex; }
         
         input { padding: 12px; border-radius: 5px; border: 1px solid #0f3460; background: #1a1a2e; color: white; outline: none; }
         button { padding: 15px; border-radius: 5px; border: none; background: #00d2ff; color: #1a1a2e; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        button:hover { background: #0099cc; }
+        button:active { transform: scale(0.98); }
     </style>
 </head>
 <body>
@@ -32,7 +30,7 @@
     <form id="fLogin" class="active">
         <input type="email" id="lEmail" placeholder="E-mail" required>
         <input type="password" id="lSenha" placeholder="Senha" required>
-        <button type="submit">Aceder à Conta</button>
+        <button type="submit" id="btnLoginAction">Aceder à Conta</button>
     </form>
 
     <form id="fCadastro">
@@ -40,7 +38,7 @@
         <input type="email" id="cEmail" placeholder="Seu melhor e-mail" required>
         <input type="password" id="cSenha" placeholder="Crie uma senha" required>
         <input type="tel" id="cTel" placeholder="WhatsApp (Ex: 11999998888)" required>
-        <button type="submit">Finalizar Cadastro</button>
+        <button type="submit" id="btnCadAction">Finalizar Cadastro</button>
     </form>
 </div>
 
@@ -62,35 +60,63 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // Lógica das Abas (JavaScript puro)
-    const btnL = document.getElementById('tabLoginBtn');
-    const btnC = document.getElementById('tabCadastroBtn');
+    // Lógica das Abas
+    const btnTabL = document.getElementById('tabLoginBtn');
+    const btnTabC = document.getElementById('tabCadastroBtn');
     const formL = document.getElementById('fLogin');
     const formC = document.getElementById('fCadastro');
 
-    btnL.addEventListener('click', () => {
-        btnL.classList.add('active'); btnC.classList.remove('active');
+    btnTabL.onclick = () => {
+        btnTabL.classList.add('active'); btnTabC.classList.remove('active');
         formL.classList.add('active'); formC.classList.remove('active');
-    });
+    };
 
-    btnC.addEventListener('click', () => {
-        btnC.classList.add('active'); btnL.classList.remove('active');
+    btnTabC.onclick = () => {
+        btnTabC.classList.add('active'); btnTabL.classList.remove('active');
         formC.classList.add('active'); formL.classList.remove('active');
-    });
+    };
 
-    // Evento de Cadastro
-    formC.addEventListener('submit', (e) => {
+    // Ação de Login
+    formL.onsubmit = async (e) => {
+        e.preventDefault(); // Impede a página de recarregar e limpar os campos
+        const email = document.getElementById('lEmail').value;
+        const senha = document.getElementById('lSenha').value;
+
+        try {
+            await signInWithEmailAndPassword(auth, email, senha);
+            window.location.href = 'showcase.html';
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao entrar: " + error.message);
+        }
+    };
+
+    // Ação de Cadastro
+    formC.onsubmit = async (e) => {
         e.preventDefault();
         const email = document.getElementById('cEmail').value;
         const senha = document.getElementById('cSenha').value;
-        
-        createUserWithEmailAndPassword(auth, email, senha)
-            .then((u) => {
-                const info = {
-                    nome: document.getElementById('cNome').value,
-                    telefone: document.getElementById('cTel').value,
-                    email: email
-                };
-                set(ref(db, 'usuarios/' + u.user.uid), info).then(() => {
-                    alert("Conta criada!");
-                    window.location.href = 'showcase.
+        const nome = document.getElementById('cNome').value;
+        const tel = document.getElementById('cTel').value;
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+            const user = userCredential.user;
+
+            // Salva no banco de dados
+            await set(ref(db, 'usuarios/' + user.uid), {
+                nome: nome,
+                email: email,
+                telefone: tel
+            });
+
+            alert("Cadastro realizado com sucesso!");
+            window.location.href = 'showcase.html';
+        } catch (error) {
+            console.error(error);
+            alert("Erro no cadastro: " + error.message);
+        }
+    };
+</script>
+</body>
+</html>
