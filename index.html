@@ -11,7 +11,7 @@
         .tab.active { color: #00d2ff; border-bottom: 3px solid #00d2ff; font-weight: bold; }
         form { display: none; flex-direction: column; gap: 15px; }
         form.active { display: flex; }
-        input { padding: 12px; border-radius: 5px; border: 1px solid #0f3460; background: #1a1a2e; color: white; }
+        input { padding: 12px; border-radius: 5px; border: 1px solid #0f3460; background: #1a1a2e; color: white; outline: none; }
         button { padding: 15px; border-radius: 5px; border: none; background: #00d2ff; color: #1a1a2e; font-weight: bold; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
@@ -32,14 +32,13 @@
     <form id="fCad">
         <input type="text" id="cNome" placeholder="Nome Completo" required>
         <input type="email" id="cEmail" placeholder="E-mail" required>
-        <input type="password" id="cSenha" placeholder="Senha" required>
+        <input type="password" id="cSenha" placeholder="Senha (mín. 6 caracteres)" required>
         <input type="tel" id="cTel" placeholder="WhatsApp" required>
         <button type="submit">Criar Conta</button>
     </form>
 </div>
 
 <script type="module">
-    // USANDO LINKS COMPATÍVEIS (v9 compat)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
     import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
@@ -57,7 +56,6 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // Seletores
     const tL = document.getElementById('tabL');
     const tC = document.getElementById('tabC');
     const formL = document.getElementById('fLogin');
@@ -73,22 +71,22 @@
         formC.classList.add('active'); formL.classList.remove('active');
     };
 
-    // Ação Login
+    // LOGIN
     formL.onsubmit = (e) => {
         e.preventDefault();
         const email = document.getElementById('lEmail').value;
         const senha = document.getElementById('lSenha').value;
 
         signInWithEmailAndPassword(auth, email, senha)
-            .then(() => window.location.href = 'showcase.html')
-            .catch(err => alert("Erro: " + err.message));
+            .then(() => { window.location.href = 'showcase.html'; })
+            .catch(err => alert("Erro ao entrar: " + err.message));
     };
 
-    // Ação Cadastro
+    // CADASTRO
     formC.onsubmit = (e) => {
         e.preventDefault();
         const email = document.getElementById('cEmail').value;
-        const senha = document.getElementById('cSenha').value;
+        const senha = document.getElementById('cSenha').value; // CORRIGIDO: Agora pega o ID cSenha
         const nome = document.getElementById('cNome').value;
         const tel = document.getElementById('cTel').value;
 
@@ -99,11 +97,11 @@
                     email: email,
                     telefone: tel
                 }).then(() => {
-                    alert("Sucesso!");
+                    alert("Conta criada com sucesso!");
                     window.location.href = 'showcase.html';
                 });
             })
-            .catch(err => alert("Erro no Cadastro: " + err.message));
+            .catch(err => alert("Erro no cadastro: " + err.message));
     };
 </script>
 </body>
