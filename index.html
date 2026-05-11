@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Login / Cadastro</title>
-    <link rel="stylesheet" href="style.css">
     <style>
         body { background: #1a1a2e; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: sans-serif; }
         .auth-container { width: 100%; max-width: 400px; background: #16213e; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .tabs { display: flex; margin-bottom: 25px; border-bottom: 2px solid #0f3460; }
-        .tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; transition: 0.3s; color: #888; }
+        .tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; color: #888; }
         .tab.active { color: #00d2ff; border-bottom: 3px solid #00d2ff; font-weight: bold; }
         form { display: none; flex-direction: column; gap: 15px; }
         form.active { display: flex; }
-        input { padding: 12px; border-radius: 5px; border: 1px solid #0f3460; background: #1a1a2e; color: white; outline: none; }
+        input { padding: 12px; border-radius: 5px; border: 1px solid #0f3460; background: #1a1a2e; color: white; }
         button { padding: 15px; border-radius: 5px; border: none; background: #00d2ff; color: #1a1a2e; font-weight: bold; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
@@ -20,29 +19,30 @@
 
 <div class="auth-container">
     <div class="tabs">
-        <div class="tab active" id="tLog">Entrar</div>
-        <div class="tab" id="tCad">Cadastrar</div>
+        <div class="tab active" id="tabL">Entrar</div>
+        <div class="tab" id="tabC">Cadastrar</div>
     </div>
 
-    <form id="formL" class="active">
-        <input type="email" id="emailL" placeholder="E-mail" required>
-        <input type="password" id="senhaL" placeholder="Senha" required>
-        <button type="submit">Aceder à Conta</button>
+    <form id="fLogin" class="active">
+        <input type="email" id="lEmail" placeholder="E-mail" required>
+        <input type="password" id="lSenha" placeholder="Senha" required>
+        <button type="submit">Entrar</button>
     </form>
 
-    <form id="formC">
-        <input type="text" id="nomeC" placeholder="Nome Completo" required>
-        <input type="email" id="emailC" placeholder="E-mail" required>
-        <input type="password" id="senhaC" placeholder="Senha" required>
-        <input type="tel" id="telC" placeholder="WhatsApp" required>
-        <button type="submit">Finalizar Cadastro</button>
+    <form id="fCad">
+        <input type="text" id="cNome" placeholder="Nome Completo" required>
+        <input type="email" id="cEmail" placeholder="E-mail" required>
+        <input type="password" id="cSenha" placeholder="Senha" required>
+        <input type="tel" id="cTel" placeholder="WhatsApp" required>
+        <button type="submit">Criar Conta</button>
     </form>
 </div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+    // USANDO LINKS COMPATÍVEIS (v9 compat)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCZq4K95loqNKYYuPFFrMS9QcUTCQ-FYRU",
@@ -58,40 +58,39 @@
     const db = getDatabase(app);
 
     // Seletores
-    const tabL = document.getElementById('tLog');
-    const tabC = document.getElementById('tCad');
-    const fL = document.getElementById('formL');
-    const fC = document.getElementById('formC');
+    const tL = document.getElementById('tabL');
+    const tC = document.getElementById('tabC');
+    const formL = document.getElementById('fLogin');
+    const formC = document.getElementById('fCad');
 
-    // Troca de Abas
-    tabL.addEventListener('click', () => {
-        tabL.classList.add('active'); tabC.classList.remove('active');
-        fL.classList.add('active'); fC.classList.remove('active');
-    });
+    // Troca de abas
+    tL.onclick = () => {
+        tL.classList.add('active'); tC.classList.remove('active');
+        formL.classList.add('active'); formC.classList.remove('active');
+    };
+    tC.onclick = () => {
+        tC.classList.add('active'); tL.classList.remove('active');
+        formC.classList.add('active'); formL.classList.remove('active');
+    };
 
-    tabC.addEventListener('click', () => {
-        tabC.classList.add('active'); tabL.classList.remove('active');
-        fC.classList.add('active'); fL.classList.remove('active');
-    });
-
-    // LOGIN
-    fL.addEventListener('submit', (e) => {
+    // Ação Login
+    formL.onsubmit = (e) => {
         e.preventDefault();
-        const email = document.getElementById('emailL').value;
-        const senha = document.getElementById('senhaL').value;
+        const email = document.getElementById('lEmail').value;
+        const senha = document.getElementById('lSenha').value;
 
         signInWithEmailAndPassword(auth, email, senha)
-            .then(() => { window.location.href = 'showcase.html'; })
-            .catch((err) => { alert("Erro ao entrar: " + err.message); });
-    });
+            .then(() => window.location.href = 'showcase.html')
+            .catch(err => alert("Erro: " + err.message));
+    };
 
-    // CADASTRO
-    fC.addEventListener('submit', (e) => {
+    // Ação Cadastro
+    formC.onsubmit = (e) => {
         e.preventDefault();
-        const email = document.getElementById('emailC').value;
-        const senha = document.getElementById('emailC').value; // Pegando o valor correto
-        const nome = document.getElementById('nomeC').value;
-        const tel = document.getElementById('telC').value;
+        const email = document.getElementById('cEmail').value;
+        const senha = document.getElementById('cSenha').value;
+        const nome = document.getElementById('cNome').value;
+        const tel = document.getElementById('cTel').value;
 
         createUserWithEmailAndPassword(auth, email, senha)
             .then((res) => {
@@ -100,12 +99,12 @@
                     email: email,
                     telefone: tel
                 }).then(() => {
-                    alert("Cadastrado com sucesso!");
+                    alert("Sucesso!");
                     window.location.href = 'showcase.html';
                 });
             })
-            .catch((err) => { alert("Erro ao cadastrar: " + err.message); });
-    });
+            .catch(err => alert("Erro no Cadastro: " + err.message));
+    };
 </script>
 </body>
 </html>
