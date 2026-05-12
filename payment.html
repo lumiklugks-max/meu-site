@@ -47,26 +47,37 @@
         }
     });
 
-    document.getElementById('btnConfirmar').onclick = () => {
-        const carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
-        // Corrige o problema do NaN garantindo que o preço seja um número
-        const total = carrinho.reduce((acc, item) => acc + (Number(item.preco || 0) * item.quantidade), 0);
-
-        if (carrinho.length === 0) return alert("Carrinho vazio!");
-
-        const pedido = {
-            cliente: usuarioLogado ? usuarioLogado.email : "Cliente não identificado",
-            itens: carrinho,
-            total: total,
-            data: new Date().toLocaleString('pt-BR'),
-            status: "Pendente"
-        };
-
-        push(ref(db, 'pedidos'), pedido).then(() => {
-            localStorage.removeItem('carrinho');
-            window.location.href = 'payment-confirmation.html';
-        }).catch(err => alert("Erro ao salvar: " + err.message));
+   document.getElementById('btnConfirmar').onclick = () => {
+    const carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
+    
+    // Função para limpar o preço e transformar em número real
+    const limparPreco = (preco) => {
+        if (typeof preco === 'number') return preco;
+        // Remove R$, espaços e troca vírgula por ponto para o JS entender
+        let valorLimpo = preco.replace('R$', '').replace(/\s/g, '').replace(',', '.');
+        return parseFloat(valorLimpo) || 0;
     };
+
+    const total = carrinho.reduce((acc, item) => {
+        const precoNum = limparPreco(item.preco);
+        return acc + (precoNum * item.quantidade);
+    }, 0);
+
+    if (carrinho.length === 0) return alert("Carrinho vazio!");
+
+    const pedido = {
+        cliente: usuarioLogado ? usuarioLogado.email : "Cliente não identificado",
+        itens: carrinho,
+        total: total, // Salva como número puro (ex: 1200.50)
+        data: new Date().toLocaleString('pt-BR'),
+        status: "Pendente"
+    };
+
+    push(ref(db, 'pedidos'), pedido).then(() => {
+        localStorage.removeItem('carrinho');
+        window.location.href = 'payment-confirmation.html';
+    }).catch(err => alert("Erro ao salvar: " + err.message));
+};
 </script>
 </body>
 </html>
