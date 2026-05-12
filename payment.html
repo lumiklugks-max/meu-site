@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Pagamento</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { background: #1a1a2e; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .payment-box { background: #16213e; padding: 30px; border-radius: 15px; width: 400px; text-align: center; }
+        .btn-finalizar { width: 100%; padding: 15px; background: #25d366; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="payment-box">
+    <h2>Finalizar Pedido</h2>
+    <div id="resumo"></div>
+    <button class="btn-finalizar" id="btnPagar">Confirmar e Finalizar</button>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCZq4K95loqNKYYuPFFrMS9QcUTCQ-FYRU",
+        authDomain: "cadastroteste047.firebaseapp.com",
+        databaseURL: "https://cadastroteste047-default-rtdb.firebaseio.com",
+        projectId: "cadastroteste047",
+        storageBucket: "cadastroteste047.firebasestorage.app",
+        appId: "1:908890693829:web:2bd31d24474e27507310ac"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    let usuarioLogado = null;
+
+    // Verifica se o usuário está logado antes de deixar pagar
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            usuarioLogado = user;
+        } else {
+            alert("Você precisa estar logado para comprar!");
+            window.location.href = 'index.html';
+        }
+    });
+
+    document.getElementById('btnPagar').onclick = () => {
+        const carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
+        const total = carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
+
+        if (carrinho.length === 0) return alert("Carrinho vazio!");
+
+        const pedido = {
+            cliente: usuarioLogado.email, // GARANTE QUE O NOME/EMAIL APAREÇA NO ADM
+            itens: carrinho,
+            total: total,
+            data: new Date().toLocaleString('pt-BR'),
+            status: "Pendente"
+        };
+
+        const pedidoId = Date.now();
+        set(ref(db, 'pedidos/' + pedidoId), pedido).then(() => {
+            localStorage.removeItem('carrinho');
+            window.location.href = 'payment-confirmation.html';
+        });
+    };
+</script>
+</body>
+</html>
