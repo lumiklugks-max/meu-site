@@ -8,8 +8,9 @@
         .cart-container { max-width: 800px; margin: 50px auto; padding: 20px; background: #1a1a2e; border-radius: 15px; color: white; }
         .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #333; }
         .total-container { text-align: right; padding: 20px; font-size: 1.5em; }
-        .btn-finalizar { background: #25d366; color: white; padding: 15px 30px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.2em; margin-top: 10px;}
-        .btn-limpar { background: #ff4b2b; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px;}
+        .btn-finalizar { background: #00d2ff; color: #1a1a2e; padding: 15px 30px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.2em; transition: 0.3s; }
+        .btn-finalizar:hover { background: #25d366; color: white; }
+        .btn-limpar { background: #ff4b2b; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -20,19 +21,39 @@
 
 <div class="cart-container">
     <h1>Meu Carrinho</h1>
-    <div id="itens-carrinho">Carregando...</div>
+    <div id="itens-carrinho"></div>
     
     <div class="total-container">
         Total: <span id="valor-total" style="color: #00d2ff;">R$ 0,00</span>
     </div>
 
-    <button class="btn-finalizar" id="btnFinalizar">Finalizar Pedido via WhatsApp 📱</button>
-    <button class="btn-limpar" id="btnLimpar">Esvaziar Carrinho</button>
+    <button class="btn-finalizar" id="btnIrPagamento">Ir para o Pagamento 💳</button>
+    <button class="btn-limpar" onclick="limparCarrinho()" style="width: 100%;">Esvaziar Carrinho</button>
 </div>
 
 <script type="module">
-    // Função simples para carregar os dados
-    function renderizarCarrinho() {
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCZq4K95loqNKYYuPFFrMS9QcUTCQ-FYRU",
+        authDomain: "cadastroteste047.firebaseapp.com",
+        databaseURL: "https://cadastroteste047-default-rtdb.firebaseio.com",
+        projectId: "cadastroteste047",
+        storageBucket: "cadastroteste047.firebasestorage.app",
+        appId: "1:908890693829:web:2bd31d24474e27507310ac"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Variável para checar se o cara está logado
+    let userLogado = null;
+    onAuthStateChanged(auth, (user) => {
+        userLogado = user;
+    });
+
+    window.carregarCarrinho = function() {
         const itensArea = document.getElementById('itens-carrinho');
         const totalArea = document.getElementById('valor-total');
         const carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
@@ -42,55 +63,40 @@
 
         if (carrinho.length === 0) {
             itensArea.innerHTML = '<p>Seu carrinho está vazio.</p>';
-            totalArea.innerText = 'R$ 0,00';
-            return;
+        } else {
+            carrinho.forEach((item) => {
+                const subtotal = item.preco * item.quantidade;
+                somaTotal += subtotal;
+                itensArea.innerHTML += `
+                    <div class="cart-item">
+                        <div><strong>${item.nome}</strong><br>Qtd: ${item.quantidade}</div>
+                        <div>R$ ${subtotal.toFixed(2)}</div>
+                    </div>`;
+            });
         }
-
-        carrinho.forEach((item) => {
-            const preco = item.precoUnitario || item.preco || 0;
-            const qtd = item.quantidade || 1;
-            const subtotal = preco * qtd;
-            somaTotal += subtotal;
-            
-            itensArea.innerHTML += `
-                <div class="cart-item">
-                    <div>
-                        <strong>${item.nome}</strong><br>
-                        <small>Desc: ${item.descontoAplicado || 0}% | Qtd: ${qtd}</small>
-                    </div>
-                    <div>R$ ${subtotal.toFixed(2)}</div>
-                </div>
-            `;
-        });
-        
         totalArea.innerText = `R$ ${somaTotal.toFixed(2)}`;
     }
 
-    // Botão Limpar
-    document.getElementById('btnLimpar').addEventListener('click', () => {
+    window.limparCarrinho = function() {
         localStorage.removeItem('carrinho');
-        renderizarCarrinho();
-    });
+        window.carregarCarrinho();
+    }
 
-    // Botão Finalizar (Simplificado para evitar erro de tela branca)
-    document.getElementById('btnFinalizar').addEventListener('click', () => {
+    // Lógica do Botão
+    document.getElementById('btnIrPagamento').addEventListener('click', () => {
         const carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
-        if (carrinho.length === 0) return alert("Carrinho vazio!");
-        
-        let msg = "Novo Pedido:%0A";
-        let total = 0;
-        carrinho.forEach(i => {
-            const p = i.precoUnitario || i.preco;
-            msg += `- ${i.nome} (x${i.quantidade}): R$ ${(p * i.quantidade).toFixed(2)}%0A`;
-            total += (p * i.quantidade);
-        });
-        msg += `%0ATotal: R$ ${total.toFixed(2)}`;
-        
-        window.open(`https://wa.me/55XXXXXXXXXXX?text=${msg}`, '_blank');
+        if (carrinho.length === 0) return alert("Adicione itens antes de finalizar!");
+
+        if (!userLogado) {
+            alert("Você precisa fazer login para finalizar o pedido.");
+            window.location.href = 'index.html';
+        } else {
+            // Se está logado, vai para a página de pagamento que você acabou de criar
+            window.location.href = 'payment.html';
+        }
     });
 
-    // Executa ao abrir
-    renderizarCarrinho();
+    window.carregarCarrinho();
 </script>
 </body>
 </html>
