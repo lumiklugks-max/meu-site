@@ -2,20 +2,23 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Pagamento - Finalizar</title>
+    <title>Finalizar Pedido</title>
     <link rel="stylesheet" href="style.css">
     <style>
         body { background: #1a1a2e; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .payment-box { background: #16213e; padding: 30px; border-radius: 15px; width: 400px; text-align: center; border: 1px solid #00d2ff; }
-        .btn-finalizar { width: 100%; padding: 15px; background: #25d366; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 20px; font-size: 1.1em; }
+        .payment-box { background: #16213e; padding: 40px; border-radius: 15px; width: 450px; text-align: center; border: 2px solid #00d2ff; box-shadow: 0 0 20px rgba(0, 210, 255, 0.3); }
+        .btn-confirmar { width: 100%; padding: 18px; background: #25d366; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 25px; font-size: 1.2em; transition: 0.3s; }
+        .btn-confirmar:hover { background: #1eb954; transform: scale(1.02); }
+        p { color: #ccc; line-height: 1.6; }
     </style>
 </head>
 <body>
 
 <div class="payment-box">
-    <h2>Finalizar Pedido</h2>
-    <p>Clique abaixo para confirmar sua compra e enviar ao administrador.</p>
-    <button class="btn-finalizar" id="btnConfirmar">Confirmar Pedido ✅</button>
+    <h2 style="color: #00d2ff;">Finalizar Pedido 📦</h2>
+    <p>Clique no botão abaixo para confirmar sua compra. <br> O administrador receberá seu pedido instantaneamente.</p>
+    <button class="btn-confirmar" id="btnConfirmar">Confirmar Pedido ✅</button>
+    <div id="status-envio" style="margin-top: 15px; font-size: 0.9em;"></div>
 </div>
 
 <script type="module">
@@ -32,52 +35,78 @@
         appId: "1:908890693829:web:2bd31d24474e27507310ac"
     };
 
+    // Inicialização
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    let usuarioLogado = null;
+    let usuarioEmail = "Cliente não identificado";
 
+    // Verifica se o usuário está logado para pegar o e-mail
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            usuarioLogado = user;
-        } else {
-            alert("Sessão expirada. Faça login novamente.");
-            window.location.href = 'index.html';
+            usuarioEmail = user.email;
+            console.log("Usuário logado:", usuarioEmail);
         }
     });
 
-   document.getElementById('btnConfirmar').onclick = () => {
-    const carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
-    
-    // Função para limpar o preço e transformar em número real
-    const limparPreco = (preco) => {
+    // Função para limpar o preço (garante que o R$ 0.00 não volte)
+    const formatarPrecoParaNumero = (preco) => {
         if (typeof preco === 'number') return preco;
-        // Remove R$, espaços e troca vírgula por ponto para o JS entender
-        let valorLimpo = preco.replace('R$', '').replace(/\s/g, '').replace(',', '.');
-        return parseFloat(valorLimpo) || 0;
+        let p = String(preco).replace('R$', '').replace(/\s/g, '').replace(',', '.');
+        return parseFloat(p) || 0;
     };
 
-    const total = carrinho.reduce((acc, item) => {
-        const precoNum = limparPreco(item.preco);
-        return acc + (precoNum * item.quantidade);
-    }, 0);
+    // Ação do Botão
+    document.getElementById('btnConfirmar').onclick = async function() {
+        const statusDiv = document.getElementById('status-envio');
+        const carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
 
-    if (carrinho.length === 0) return alert("Carrinho vazio!");
+        if (carrinho.length === 0) {
+            alert("Seu carrinho está vazio! Volte à loja.");
+            window.location.href = 'showcase.html';
+            return;
+        }
 
-    const pedido = {
-        cliente: usuarioLogado ? usuarioLogado.email : "Cliente não identificado",
-        itens: carrinho,
-        total: total, // Salva como número puro (ex: 1200.50)
-        data: new Date().toLocaleString('pt-BR'),
-        status: "Pendente"
+        this.disabled = true;
+        this.innerText = "Enviando...";
+        statusDiv.innerHTML = "Processando seu pedido...";
+
+        // Calcula o total corretamente
+        const totalPedido = carrinho.reduce((acc, item) => {
+            return acc + (formatarPrecoParaNumero(item.preco) * item.quantidade);
+        }, 0);
+
+        const novoPedido = {
+            cliente: usuarioEmail,
+            itens: carrinho,
+            total: totalPedido,
+            data: new Date().toLocaleString('pt-BR'),
+            status: "Pendente"
+        };
+
+        try {
+            // Salva no Firebase
+            await push(ref(db, 'pedidos'), novoPedido);
+            
+            // Limpa o carrinho e redireciona
+            localStorage.removeItem('carrinho');
+            statusDiv.style.color = "#25d366";
+            statusDiv.innerHTML = "Pedido enviado com sucesso!";
+            
+            setTimeout(() => {
+                window.location.href = 'payment-confirmation.html';
+            }, 1500);
+
+        } catch (error) {
+            console.error("Erro ao enviar pedido:", error);
+            alert("Erro ao enviar: " + error.message);
+            this.disabled = false;
+            this.innerText = "Confirmar Pedido ✅";
+            statusDiv.style.color = "#ff4b2b";
+            statusDiv.innerHTML = "Falha no envio. Tente novamente.";
+        }
     };
-
-    push(ref(db, 'pedidos'), pedido).then(() => {
-        localStorage.removeItem('carrinho');
-        window.location.href = 'payment-confirmation.html';
-    }).catch(err => alert("Erro ao salvar: " + err.message));
-};
 </script>
 </body>
 </html>
