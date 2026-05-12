@@ -35,61 +35,62 @@
         appId: "1:908890693829:web:2bd31d24474e27507310ac"
     };
 
-    // Inicialização
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
 
     let usuarioEmail = "Cliente não identificado";
 
-    // Verifica se o usuário está logado para pegar o e-mail
     onAuthStateChanged(auth, (user) => {
         if (user) {
             usuarioEmail = user.email;
-            console.log("Usuário logado:", usuarioEmail);
         }
     });
 
-    // Função para limpar o preço (garante que o R$ 0.00 não volte)
+    // FUNÇÃO DE LIMPEZA MELHORADA
     const formatarPrecoParaNumero = (preco) => {
         if (typeof preco === 'number') return preco;
-        let p = String(preco).replace('R$', '').replace(/\s/g, '').replace(',', '.');
+        
+        // Converte para string e remove R$, espaços e pontos de milhar
+        let p = String(preco)
+            .replace('R$', '')
+            .replace(/\s/g, '')
+            .replace(/\./g, '') // Remove o ponto (ex: 1.200 vira 1200)
+            .replace(',', '.');  // Troca a vírgula por ponto decimal
+            
         return parseFloat(p) || 0;
     };
 
-    // Ação do Botão
     document.getElementById('btnConfirmar').onclick = async function() {
         const statusDiv = document.getElementById('status-envio');
         const carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
 
         if (carrinho.length === 0) {
-            alert("Seu carrinho está vazio! Volte à loja.");
+            alert("Seu carrinho está vazio!");
             window.location.href = 'showcase.html';
             return;
         }
 
         this.disabled = true;
         this.innerText = "Enviando...";
-        statusDiv.innerHTML = "Processando seu pedido...";
 
-        // Calcula o total corretamente
+        // Cálculo com a limpeza nova
         const totalPedido = carrinho.reduce((acc, item) => {
-            return acc + (formatarPrecoParaNumero(item.preco) * item.quantidade);
+            const v = formatarPrecoParaNumero(item.preco);
+            const q = parseInt(item.quantidade) || 0;
+            return acc + (v * q);
         }, 0);
 
         const novoPedido = {
             cliente: usuarioEmail,
             itens: carrinho,
-            total: totalPedido,
+            total: totalPedido, // Aqui vai o número limpo (ex: 1200.50)
             data: new Date().toLocaleString('pt-BR'),
             status: "Pendente"
         };
 
         try {
-            // Salva no Firebase
             await push(ref(db, 'pedidos'), novoPedido);
-            
-            // Limpa o carrinho e redireciona
             localStorage.removeItem('carrinho');
             statusDiv.style.color = "#25d366";
             statusDiv.innerHTML = "Pedido enviado com sucesso!";
@@ -99,12 +100,9 @@
             }, 1500);
 
         } catch (error) {
-            console.error("Erro ao enviar pedido:", error);
             alert("Erro ao enviar: " + error.message);
             this.disabled = false;
             this.innerText = "Confirmar Pedido ✅";
-            statusDiv.style.color = "#ff4b2b";
-            statusDiv.innerHTML = "Falha no envio. Tente novamente.";
         }
     };
 </script>
