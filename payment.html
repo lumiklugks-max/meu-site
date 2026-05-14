@@ -47,19 +47,23 @@
         }
     });
 
-    // FUNÇÃO DE LIMPEZA MELHORADA
-    const formatarPrecoParaNumero = (preco) => {
-        if (typeof preco === 'number') return preco;
-        
-        // Converte para string e remove R$, espaços e pontos de milhar
-        let p = String(preco)
-            .replace('R$', '')
-            .replace(/\s/g, '')
-            .replace(/\./g, '') // Remove o ponto (ex: 1.200 vira 1200)
-            .replace(',', '.');  // Troca a vírgula por ponto decimal
-            
-        return parseFloat(p) || 0;
-    };
+const formatarPrecoParaNumero = (preco) => {
+    if (typeof preco === 'number') return preco;
+    if (!preco) return 0;
+
+    let p = String(preco).replace('R$', '').trim();
+    
+    // Se tiver ponto e vírgula (ex: 1.200,50), remove o ponto e troca a vírgula
+    if (p.includes('.') && p.includes(',')) {
+        p = p.replace(/\./g, '').replace(',', '.');
+    } 
+    // Se só tiver vírgula (ex: 1200,50), troca por ponto
+    else if (p.includes(',')) {
+        p = p.replace(',', '.');
+    }
+
+    return parseFloat(p) || 0;
+};
 
     document.getElementById('btnConfirmar').onclick = async function() {
         const statusDiv = document.getElementById('status-envio');
