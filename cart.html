@@ -1,3 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Meu Carrinho 🛒</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .cart-container { max-width: 800px; margin: 50px auto; padding: 20px; background: #1a1a2e; border-radius: 15px; color: white; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #333; }
+        .total-container { text-align: right; padding: 20px; font-size: 1.5em; }
+        .btn-finalizar { background: #00d2ff; color: #1a1a2e; padding: 15px 30px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.2em; transition: 0.3s; }
+        .btn-finalizar:hover { background: #25d366; color: white; }
+        .btn-limpar { background: #ff4b2b; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<nav style="padding: 20px;">
+    <a href="showcase.html" style="color: #00d2ff;">← Continuar Comprando</a>
+</nav>
+
+<div class="cart-container">
+    <h1>Meu Carrinho</h1>
+    <div id="itens-carrinho"></div>
+    
+    <div class="total-container">
+        Total: <span id="valor-total" style="color: #00d2ff;">R$ 0,00</span>
+    </div>
+
+    <button class="btn-finalizar" id="btnIrPagamento">Ir para o Pagamento 💳</button>
+    <button class="btn-limpar" onclick="limparCarrinho()" style="width: 100%;">Esvaziar Carrinho</button>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
@@ -15,7 +48,9 @@
     const auth = getAuth(app);
 
     let userLogado = null;
-    onAuthStateChanged(auth, (user) => { userLogado = user; });
+    onAuthStateChanged(auth, (user) => {
+        userLogado = user;
+    });
 
     window.carregarCarrinho = function() {
         const itensArea = document.getElementById('itens-carrinho');
@@ -29,8 +64,8 @@
             itensArea.innerHTML = '<p style="text-align:center;">Seu carrinho está vazio.</p>';
         } else {
             carrinho.forEach((item) => {
-                // LIMPEZA CRÍTICA: Força o preço a ser número, removendo R$ se existir
-                let precoLimpo = String(item.preco).replace('R$', '').replace(/\s/g, '').replace(',', '.');
+                // LIMPEZA: Remove caracteres de texto e garante o formato decimal correto
+                let precoLimpo = String(item.preco).replace('R$', '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
                 let precoNum = parseFloat(precoLimpo) || 0;
                 let qtdNum = parseInt(item.quantidade) || 1;
 
@@ -66,3 +101,5 @@
 
     window.carregarCarrinho();
 </script>
+</body>
+</html>
